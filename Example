@@ -1,0 +1,17 @@
+n=1
+while n<=3:
+        id=input("Enter ID :")
+        name=input("Enter name:")
+        hour=float(input("Enter hours:"))
+        rate=float(input("Enter rate:"))
+        salary=hour*rate
+        tax=(salary*(10/100))
+        income=salary-tax
+        print("id=",id)
+        print("name=",name)
+        print("hour=",hour)
+        print("rate=",rate)
+        print("salary=",salary)
+        print("tax=",tax)
+        print("income=",income)
+        n=n+1
