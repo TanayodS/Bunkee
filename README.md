@@ -1,2 +1,1 @@
-# Bunkee
-<h1 align="center">Tanayod Suthimathakorn</h1>
+<p align="center">Tanayod Suthimathakorn</p>
