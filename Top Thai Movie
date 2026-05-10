@@ -1,0 +1,212 @@
+"""
+Advanced Thai Movies Scraper with Selenium
+Scrapes top 10 Thai movies from TrueID Entertainment
+"""
+
+import json
+import csv
+from datetime import datetime
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from bs4 import BeautifulSoup
+import requests
+import sys
+
+class ThaiMoviesScraper:
+    def __init__(self, use_selenium=True):
+        self.url = "https://entertainment.trueid.net/detail/jgd8Z9wxB3Jg"
+        self.movies = []
+        self.use_selenium = use_selenium
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+    
+    def scrape_with_selenium(self):
+        """Scrape using Selenium for JavaScript-rendered content"""
+        print("🌐 Starting Selenium scraper...")
+        
+        try:
+            options = webdriver.ChromeOptions()
+            options.add_argument('--start-maximized')
+            options.add_argument('--disable-notifications')
+            
+            driver = webdriver.Chrome(options=options)
+            driver.get(self.url)
+            
+            # Wait for content to load
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_all_elements_located((By.CLASS_NAME, "movie-item"))
+            )
+            
+            # Extract data
+            soup = BeautifulSoup(driver.page_source, 'html.parser')
+            self._parse_movies(soup)
+            
+            driver.quit()
+            print("✅ Selenium scraping completed successfully!")
+            
+        except TimeoutException:
+            print("⚠️ Timeout waiting for page to load. Falling back to requests...")
+            self.scrape_with_requests()
+        except Exception as e:
+            print(f"❌ Selenium error: {e}. Falling back to requests...")
+            self.scrape_with_requests()
+    
+    def scrape_with_requests(self):
+        """Fallback: Scrape using requests for static content"""
+        print("🌐 Starting requests scraper...")
+        
+        try:
+            response = requests.get(self.url, headers=self.headers, timeout=10)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.content, 'html.parser')
+            self._parse_movies(soup)
+            print("✅ Requests scraping completed successfully!")
+            
+        except Exception as e:
+            print(f"❌ Error during requests scraping: {e}")
+    
+    def _parse_movies(self, soup):
+        """Parse movie data from HTML"""
+        # Try multiple selectors to find movie containers
+        selectors = [
+            'div.movie-item',
+            'div.movie-card',
+            'article.movie',
+            'div[class*="movie"]',
+            'div.content-item'
+        ]
+        
+        movie_containers = []
+        for selector in selectors:
+            movie_containers = soup.select(selector)
+            if movie_containers:
+                print(f"📦 Found {len(movie_containers)} items using selector: {selector}")
+                break
+        
+        if not movie_containers:
+            print("⚠️ No movie containers found. Page structure may have changed.")
+            return
+        
+        # Limit to top 10
+        for rank, container in enumerate(movie_containers[:10], 1):
+            try:
+                movie = self._extract_movie_data(container, rank)
+                if movie:
+                    self.movies.append(movie)
+            except Exception as e:
+                print(f"⚠️ Error parsing movie {rank}: {e}")
+        
+        print(f"📊 Successfully extracted {len(self.movies)} movies")
+    
+    def _extract_movie_data(self, container, rank):
+        """Extract individual movie data"""
+        movie = {'rank': rank}
+        
+        # Extract title
+        title_elem = container.select_one('h1, h2, h3, .title, [class*="title"]')
+        movie['title'] = title_elem.get_text(strip=True) if title_elem else 'N/A'
+        
+        # Extract genre
+        genre_elem = container.select_one('.genre, [class*="genre"]')
+        movie['genre'] = genre_elem.get_text(strip=True) if genre_elem else 'N/A'
+        
+        # Extract year
+        year_elem = container.select_one('.year, [class*="year"]')
+        movie['year'] = year_elem.get_text(strip=True) if year_elem else 'N/A'
+        
+        # Extract rating
+        rating_elem = container.select_one('.rating, [class*="rating"]')
+        movie['rating'] = rating_elem.get_text(strip=True) if rating_elem else 'N/A'
+        
+        # Extract description
+        desc_elem = container.select_one('.description, .synopsis, [class*="description"]')
+        movie['description'] = desc_elem.get_text(strip=True) if desc_elem else 'N/A'
+        
+        # Add metadata
+        movie['scraped_date'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        movie['source_url'] = self.url
+        
+        return movie
+    
+    def export_to_csv(self, filename='top_10_thai_movies.csv'):
+        """Export movies to CSV file"""
+        if not self.movies:
+            print("❌ No movies to export")
+            return False
+        
+        try:
+            keys = self.movies[0].keys()
+            with open(filename, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.DictWriter(f, fieldnames=keys)
+                writer.writeheader()
+                writer.writerows(self.movies)
+            
+            print(f"✅ Exported to {filename}")
+            return True
+        except Exception as e:
+            print(f"❌ Error exporting to CSV: {e}")
+            return False
+    
+    def export_to_json(self, filename='top_10_thai_movies.json'):
+        """Export movies to JSON file"""
+        if not self.movies:
+            print("❌ No movies to export")
+            return False
+        
+        try:
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(self.movies, f, ensure_ascii=False, indent=2)
+            
+            print(f"✅ Exported to {filename}")
+            return True
+        except Exception as e:
+            print(f"❌ Error exporting to JSON: {e}")
+            return False
+    
+    def display_results(self):
+        """Display scraped data in console"""
+        if not self.movies:
+            print("❌ No movies found")
+            return
+        
+        print("\n" + "="*80)
+        print("TOP 10 THAI MOVIES".center(80))
+        print("="*80 + "\n")
+        
+        for movie in self.movies:
+            print(f"#{movie['rank']} - {movie['title']}")
+            print(f"   Genre: {movie['genre']}")
+            print(f"   Year: {movie['year']}")
+            print(f"   Rating: {movie['rating']}")
+            print(f"   Description: {movie['description'][:100]}...")
+            print()
+    
+    def run(self):
+        """Run the complete scraping workflow"""
+        print("🎬 Starting Thai Movies Scraper\n")
+        
+        if self.use_selenium:
+            self.scrape_with_selenium()
+        else:
+            self.scrape_with_requests()
+        
+        self.display_results()
+        self.export_to_csv()
+        self.export_to_json()
+        
+        print("\n✨ Done!")
+
+
+if __name__ == "__main__":
+    # Check if fallback method is requested
+    use_selenium = True
+    if len(sys.argv) > 1 and sys.argv[1] == 'requests':
+        use_selenium = False
+    
+    scraper = ThaiMoviesScraper(use_selenium=use_selenium)
+    scraper.run()
