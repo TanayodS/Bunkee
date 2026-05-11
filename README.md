@@ -1,21 +1,20 @@
 <h1 align="center">Tanayod Suthimathakorn</h1>
-# IMDB Top 250 Movies Scraper
+# Thailand Top 50 Companies Scraper
 
-A Python web scraper that fetches IMDB's Top 250 movies and exports them to a CSV file with ratings.
+A Python project to scrape the top 50 companies in Thailand from [WorkVenture](https://top50.workventure.com/) and export the data to CSV or Excel format.
 
 ## Features
 
-✅ Scrapes IMDB Top 250 movies list  
-✅ Extracts movie titles and ratings  
-✅ Exports data to CSV format  
-✅ Displays results in console with rankings  
-✅ Error handling for network issues  
-✅ UTF-8 encoding support  
+- **Web Scraping**: Fetches company data from https://top50.workventure.com/
+- **Data Extraction**: Extracts company name, rank, description, website link, and logo
+- **Multiple Export Formats**: Support for CSV and Excel (XLSX) export
+- **Error Handling**: Comprehensive logging and error handling
+- **Flexible Parsing**: Adapts to different HTML structures
+- **Display Results**: Pretty-print scraped data to console
 
 ## Installation
 
-1. **Clone or download this project**
-
-2. **Install dependencies:**
+1. **Clone the repository**:
 ```bash
-pip install -r requirements.txt
+git clone https://github.com/TanayodS/thailand-top50-companies.git
+cd thailand-top50-companies
