@@ -18,3 +18,7 @@ A Python project to scrape the top 50 companies in Thailand from [WorkVenture](h
 ```bash
 git clone https://github.com/TanayodS/thailand-top50-companies.git
 cd thailand-top50-companies
+
+Install dependencies:
+bash
+pip install -r requirements.txt
